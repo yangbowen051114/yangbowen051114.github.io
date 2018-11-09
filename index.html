@@ -14,16 +14,54 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5"></script>
     <script src="MarkdownPalettes.umd.js"></script>
     <script>
-      const app = new Vue({
-        template: '<markdown-palettes v-model="code"/>',
-        el: '#editor',
-        data: {
-          code: '# Demo'
-        },
-        components: {
-          MarkdownPalettes
-        }
-      })
+      
+    var markdownPalettes = null;
+    function getEditorVal() {
+        if(markdownPalettes)
+            return markdownPalettes.editor.getCode();
+        else
+            return $("#editor").val();
+    }
+
+    function setEditorVal(code) {
+        if(markdownPalettes)
+            markdownPalettes.editor.setCode(code);
+        else
+            $("#editor").val(code);
+    }
+
+    $(document).ready(function() {
+        if ($("#editor-new").length > 0)
+            markdownPalettes = new MarkdownPalettes("#editor-new");
+        else if ($(".editor-wrap").length === 0)
+            $("#editor").markDownEditor({});
+    });
+
+    $("#submit-reply").click(function () {
+        $(this).addClass("am-disabled").val("提交中");
+
+        var content, verify;
+        var postID = $("#submit-reply").attr("data-postid");
+        content = getEditorVal();
+        verify = $("[name=verify]").val();
+        $.post("/api/discuss/reply/" + postID, {
+            content: content,
+            verify: verify
+        }, function (data) {
+            if(data.status !== 200) {
+                $("#submit-reply").removeClass("am-disabled");
+                show_alert("好像哪里有点问题", res["message"]);
+            } else {
+                var page = Math.ceil((parseInt($("[data-reply-count]").attr('data-reply-count')) + 1) / 10);
+                goto_url('/discuss/show/'+postID, {page: page})
+            }
+        });
+    });
+
+	$("[data-fd-username]").click(function () {
+        setEditorVal('@' + $(this).attr("data-fd-username") + ' ');
+	});
+
     </script>
   </body>
 </html>
